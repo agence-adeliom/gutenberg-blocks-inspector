@@ -172,7 +172,7 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
 							$pages = $block['data']['urlsByPostType'][$slug];
 
 							$urls = '<div class="post-type-links" style="display: none; position: absolute; background-color: white; box-sizing: border-box; padding: 8px 16px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); z-index: 999; width: 350px; right: 0; top: 100%; max-height: 400px; overflow: scroll;"><ul>';
-							$urls .= '<p>Pages "<strong>' . $postType . '</strong>" contenant le bloc "<strong>' . $block['title'] . '</strong>" <i>(' . number_format(count($pages), 0, ',', ' ') . ' occurence·s)</i></p>';
+							$urls .= '<p>Pages "<strong>' . $postType . '</strong>" contenant le bloc "<strong>' . $block['title'] . '</strong>" <i>(' . number_format(count($pages), 0, ',', ' ') . ' occurrence·s)</i></p>';
 
 							foreach ($pages as $page) {
 								$urls .= '<li><a class="post-type-link" target="_blank" href="' . $adminUrlsByUrl[$page] . '">' . $pageNameByUrl[$page] . '</a></li>';
