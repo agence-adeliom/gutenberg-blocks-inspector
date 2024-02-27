@@ -1,0 +1,17 @@
+{
+    "name": "agence-adeliom/gutenberg-blocks-inspector",
+    "type": "wordpress-muplugin",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "AgenceAdeliom\\GutenbergBlocksInspector\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "This GitHub repository houses the adeliom-blocks-inspector.php plugin for WordPress. It offers a captivating glimpse into the blocks utilized on the site, providing essential details. Stats and links for effortless exploration.Agence Adeliom",
+            "email": "dev@adeliom.com"
+        }
+    ],
+    "require": {}
+}
