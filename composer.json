@@ -13,5 +13,7 @@
             "email": "dev@adeliom.com"
         }
     ],
-    "require": {}
+    "require": {
+        "php": ">=7.4"
+    }
 }

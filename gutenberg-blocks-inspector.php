@@ -16,7 +16,7 @@
  * Update URI:        https://adeliom.com
  * Text Domain:       adeliom
  * Domain Path:       /lang
- * Requires PHP:      8.2
+ * Requires PHP:      7.4
  * Requires at least: 6.3.4
  */
 
@@ -68,7 +68,11 @@ function blocksInspectorPage()
 					];
 
 					if (!isset($postTypes[$result->post_type])) {
-						$label = get_post_type_object($result->post_type)?->label;
+						$label = null;
+
+						if ($postType = get_post_type_object($result->post_type)) {
+							$label = $postType->label;
+						}
 
 						if (null === $label) {
 							$label = $result->post_type;
