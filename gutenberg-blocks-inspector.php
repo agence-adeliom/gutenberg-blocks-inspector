@@ -35,7 +35,6 @@ function blocksInspectorPage()
 	global $wpdb;
 
 	$allBlocks = WP_Block_Type_Registry::get_instance()->get_all_registered();
-	$blocksCount = count($allBlocks);
 	$postTypes = [];
 	$blocks = [];
 	$urlsById = [];
@@ -130,7 +129,7 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
                 <th>Icône</th>
                 <th>Nom</th>
                 <th>Slug</th>
-                <th>Occurences</th>
+                <th>Occurrences</th>
                 <th>Post Types</th>
             </tr>
             </thead>
@@ -148,7 +147,9 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
 								<?php
 							} else {
 								?>
+                                <div class="block-svg-icon-container">
 								<?php echo $block['icon'] ?>
+                                </div>
 								<?php
 							}
 						}
@@ -227,6 +228,16 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
 
         .post-type-link:hover {
             text-decoration: underline;
+        }
+
+        .block-svg-icon-container {
+            width: 20px;
+            height: 20px;
+        }
+
+        .block-svg-icon-container svg {
+            width: 100%;
+            height: 100%;
         }
     </style>
 
