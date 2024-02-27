@@ -8,7 +8,7 @@
  *
  * @wordpress-plugin
  * Plugin Name:       Gutenberg Blocks Inspector
- * Plugin URI:        https://adeliom.com
+ * Plugin URI:        https://github.com/agence-adeliom/gutenberg-blocks-inspector
  * Description:       Inspecteur de blocks Gutenberg
  * Version:           0.0.1
  * Author:            Agence Adeliom
