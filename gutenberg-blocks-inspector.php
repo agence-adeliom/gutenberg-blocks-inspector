@@ -122,8 +122,18 @@ function blocksInspectorPage()
 function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
 {
 	?>
+    <style>
+        .w-inspector{
+            .odd{
+                background-color: #f6f7f7;
+            }
+            .even{
+            }
+        }
+
+    </style>
     <div class="wrap">
-        <table class="wp-list-table widefat">
+        <table class="wp-list-table widefat w-inspector">
             <thead>
             <tr>
                 <th>Icône</th>
@@ -135,9 +145,14 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
             </thead>
             <tbody>
 			<?php
+            $index = 0;
 			foreach ($blocks as $block) {
+                $rowClass = ($index % 2 === 0) ? 'even' : 'odd';
+                if(!str_starts_with($block['name'], 'acf/')) {
+                    continue;
+                }
 				?>
-                <tr>
+                <tr  class="<?php echo $rowClass; ?>">
                     <td>
 						<?php
 						if (null !== $block['icon']) {
@@ -187,6 +202,7 @@ function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl)
 						?></td>
                 </tr>
 				<?php
+                $index++;
 			}
 			?>
             </tbody>
