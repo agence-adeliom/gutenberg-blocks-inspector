@@ -1,87 +1,119 @@
 // ==================================================
-// Variables globales
+// Gutenberg Blocks Inspector - JavaScript
 // ==================================================
+
 const SELECTORS = {
     blockSearch: '#block-search',
     postTypeFilter: '#post-type-filter',
     occurrenceFilter: '#occurrence-filter',
     resetFilters: '#reset-filters',
-    blocksTableRows: '#blocks-table tbody tr',
-    postTypeCell: 'td:nth-child(5)',
-    badgeCell: 'td:nth-child(4) .block-badge',
-    nameCell: 'td:nth-child(2) strong',
-    slugCell: 'td:nth-child(3)',
     blocksTable: '#blocks-table',
-    blockFilters: '#block-filters',
-    postTypeTitle: '.post-type-title',
-    postTypeLinks: '.post-type-links',
-    postTypeOccurrence: '.post-type-occurrence'
+    blocksTableRows: '#blocks-table tbody tr',
+    blocksCount: '#blocks-count',
+    nameCell: '.col-name .block-title',
+    slugCell: '.col-slug .block-slug',
+    badgeCell: '.col-occurrences .block-badge',
+    postTypeCell: '.col-posttypes',
+    posttypeChip: '.posttype-chip'
 };
 
-// Gutenberg Blocks Inspector - JS
-
 document.addEventListener('DOMContentLoaded', function () {
-    // Tooltips pour les post types
-    const titles = Array.from(document.querySelectorAll(SELECTORS.postTypeTitle));
-    let lastEnabledTooltip = null;
-    titles.forEach(title => {
-        title.addEventListener('mouseenter', (e) => {
-            if (e.target.tagName === 'SPAN') {
-                e.target.querySelector(SELECTORS.postTypeLinks).style.display = 'block';
-                lastEnabledTooltip = e.target;
-            }
-        });
-        title.addEventListener('mouseleave', (e) => {
-            if (e.target.tagName === 'SPAN') {
-                e.target.querySelector(SELECTORS.postTypeLinks).style.display = 'none';
-            }
-        });
-    });
+    const searchInput = document.querySelector(SELECTORS.blockSearch);
+    const postTypeFilter = document.querySelector(SELECTORS.postTypeFilter);
+    const occurrenceFilter = document.querySelector(SELECTORS.occurrenceFilter);
+    const resetButton = document.querySelector(SELECTORS.resetFilters);
+    const blocksCount = document.querySelector(SELECTORS.blocksCount);
 
-    // Filtres dynamiques
+    // Fonction de filtrage du tableau
     function filterBlocksTable() {
-        const search = document.querySelector(SELECTORS.blockSearch).value.toLowerCase();
-        const postType = document.querySelector(SELECTORS.postTypeFilter).value;
-        const occurrence = document.querySelector(SELECTORS.occurrenceFilter).value;
+        const search = searchInput.value.toLowerCase().trim();
+        const postType = postTypeFilter.value;
+        const occurrence = occurrenceFilter.value;
         const rows = document.querySelectorAll(SELECTORS.blocksTableRows);
+
+        let visibleCount = 0;
+
         rows.forEach(row => {
             let show = true;
-            // Recherche plein texte
-            const name = row.querySelector(SELECTORS.nameCell).textContent.toLowerCase();
-            const slug = row.querySelector(SELECTORS.slugCell).textContent.toLowerCase();
-            if (search && !(name.includes(search) || slug.includes(search))) {
-                show = false;
+
+            // Recherche plein texte (nom ou slug)
+            if (search) {
+                const name = row.querySelector(SELECTORS.nameCell)?.textContent.toLowerCase() || '';
+                const slug = row.querySelector(SELECTORS.slugCell)?.textContent.toLowerCase() || '';
+                if (!(name.includes(search) || slug.includes(search))) {
+                    show = false;
+                }
             }
-            // Filtre post type
-            if (postType) {
-                const postTypesAttr = row.querySelector(SELECTORS.postTypeCell).getAttribute('data-posttypes') || '';
-                const postTypesArr = postTypesAttr.split(',');
+
+            // Filtre par type de contenu
+            if (show && postType) {
+                const postTypesAttr = row.querySelector(SELECTORS.postTypeCell)?.getAttribute('data-posttypes') || '';
+                const postTypesArr = postTypesAttr.split(',').filter(Boolean);
                 if (!postTypesArr.includes(postType)) {
                     show = false;
                 }
             }
-            // Filtre occurrences
-            const occText = row.querySelector(SELECTORS.badgeCell).textContent;
-            let occValue = 0;
-            if (occText === 'Inutilisé') {
-                occValue = 0;
-            } else {
-                occValue = parseInt(occText);
+
+            // Filtre par occurrences
+            if (show && occurrence) {
+                const badgeText = row.querySelector(SELECTORS.badgeCell)?.textContent.trim() || '0';
+                let occValue = 0;
+
+                if (badgeText === 'Inutilisé') {
+                    occValue = 0;
+                } else {
+                    occValue = parseInt(badgeText, 10) || 0;
+                }
+
+                switch (occurrence) {
+                    case '0':
+                        if (occValue !== 0) show = false;
+                        break;
+                    case '1-10':
+                        if (occValue < 1 || occValue > 10) show = false;
+                        break;
+                    case '11-50':
+                        if (occValue < 11 || occValue > 50) show = false;
+                        break;
+                    case '>50':
+                        if (occValue <= 50) show = false;
+                        break;
+                }
             }
-            if (occurrence === '0' && occValue !== 0) show = false;
-            if (occurrence === '1-10' && (occValue < 1 || occValue > 10)) show = false;
-            if (occurrence === '>100' && occValue <= 100) show = false;
+
             row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        // Mise à jour du compteur
+        if (blocksCount) {
+            blocksCount.textContent = visibleCount + ' bloc' + (visibleCount > 1 ? 's' : '');
+        }
+    }
+
+    // Événements des filtres
+    if (searchInput) {
+        searchInput.addEventListener('input', filterBlocksTable);
+    }
+
+    if (postTypeFilter) {
+        postTypeFilter.addEventListener('change', filterBlocksTable);
+    }
+
+    if (occurrenceFilter) {
+        occurrenceFilter.addEventListener('change', filterBlocksTable);
+    }
+
+    // Réinitialisation des filtres
+    if (resetButton) {
+        resetButton.addEventListener('click', function () {
+            if (searchInput) searchInput.value = '';
+            if (postTypeFilter) postTypeFilter.value = '';
+            if (occurrenceFilter) occurrenceFilter.value = '';
+            filterBlocksTable();
         });
     }
 
-    document.querySelector(SELECTORS.blockSearch).addEventListener('input', filterBlocksTable);
-    document.querySelector(SELECTORS.postTypeFilter).addEventListener('change', filterBlocksTable);
-    document.querySelector(SELECTORS.occurrenceFilter).addEventListener('change', filterBlocksTable);
-    document.querySelector(SELECTORS.resetFilters).addEventListener('click', function () {
-        document.querySelector(SELECTORS.blockSearch).value = '';
-        document.querySelector(SELECTORS.postTypeFilter).value = '';
-        document.querySelector(SELECTORS.occurrenceFilter).value = '';
-        filterBlocksTable();
-    });
+    // Animation au survol des chips de type de contenu (pour le dropdown)
+    // Le dropdown est géré en CSS pur via :hover
 });
