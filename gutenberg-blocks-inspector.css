@@ -443,7 +443,6 @@ Tableau
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
-    overflow: hidden;
 }
 
 .blocks-table-header {
@@ -452,6 +451,7 @@ Tableau
     align-items: center;
     padding: 20px 24px;
     border-bottom: 1px solid #f0f0f1;
+    border-radius: 12px 12px 0 0;
 }
 
 .blocks-table-header .section-title {
@@ -468,7 +468,7 @@ Tableau
 }
 
 .blocks-table-wrapper {
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .blocks-table {
@@ -500,6 +500,8 @@ Tableau
 
 .blocks-table tbody tr:hover {
     background: #f8f9fa;
+    position: relative;
+    z-index: 5;
 }
 
 .blocks-table tbody td {
