@@ -14,8 +14,14 @@ const SELECTORS = {
     slugCell: '.col-slug .block-slug',
     badgeCell: '.col-occurrences .block-badge',
     postTypeCell: '.col-posttypes',
-    posttypeChip: '.posttype-chip'
+    posttypeChip: '.posttype-chip',
+    formSearch: '#form-search',
+    formsTable: '#forms-table',
+    formsTableRows: '#forms-table tbody tr',
+    formsCount: '#forms-count'
 };
+
+const ACTIVE_TAB = new URLSearchParams(window.location.search).get('tab') || 'blocks';
 
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector(SELECTORS.blockSearch);
@@ -116,4 +122,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Animation au survol des chips de type de contenu (pour le dropdown)
     // Le dropdown est géré en CSS pur via :hover
+
+    // ===== Onglet Formulaires =====
+    if (ACTIVE_TAB === 'forms') {
+        const formSearchInput = document.querySelector(SELECTORS.formSearch);
+        const formsCount = document.querySelector(SELECTORS.formsCount);
+
+        function filterFormsTable() {
+            const search = formSearchInput.value.toLowerCase().trim();
+            const rows = document.querySelectorAll(SELECTORS.formsTableRows);
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const id = row.querySelector('.col-form-id')?.textContent.toLowerCase() || '';
+                const title = row.querySelector('.col-form-title')?.textContent.toLowerCase() || '';
+                const show = !search || id.includes(search) || title.includes(search);
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            if (formsCount) {
+                formsCount.textContent = visibleCount + ' formulaire' + (visibleCount > 1 ? 's' : '');
+            }
+        }
+
+        if (formSearchInput) {
+            formSearchInput.addEventListener('input', filterFormsTable);
+        }
+    }
 });

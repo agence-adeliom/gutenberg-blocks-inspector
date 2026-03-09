@@ -31,8 +31,158 @@ Layout principal
 .blocks-inspector-wrap h1 {
     font-size: 28px;
     font-weight: 600;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     color: #1d2327;
+}
+
+/*
+==================================================
+Navigation par onglets
+==================================================
+*/
+.inspector-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 2px solid #dcdcde;
+}
+
+.inspector-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 32px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #646970;
+    text-decoration: none;
+    border: 2px solid transparent;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: -2px;
+    transition: all 0.15s ease;
+}
+
+.inspector-tab:hover {
+    color: #1d2327;
+    background: #f8f9fa;
+}
+
+.inspector-tab:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.inspector-tab--active {
+    color: #1d2327;
+    background: #fff;
+    font-weight: 600;
+    border-color: #dcdcde;
+    border-bottom-color: #fff;
+}
+
+.inspector-tab--active:hover {
+    background: #fff;
+}
+
+.inspector-tab .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.inspector-tab-content {
+    border: 2px solid #dcdcde;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 24px;
+    margin-bottom: 28px;
+}
+
+/*
+==================================================
+Alerte Gravity Forms
+==================================================
+*/
+.forms-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    border-left: 4px solid #dba617;
+}
+
+.forms-alert > .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #dba617;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.forms-alert-content strong {
+    display: block;
+    font-size: 15px;
+    color: #1d2327;
+    margin-bottom: 4px;
+}
+
+.forms-alert-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #646970;
+}
+
+/*
+==================================================
+Formulaires - Tableau
+==================================================
+*/
+.col-form-id {
+    width: 80px;
+}
+
+.col-form-title {
+    min-width: 200px;
+}
+
+.col-form-entries {
+    width: 120px;
+    text-align: center;
+}
+
+.col-form-pages {
+    min-width: 250px;
+}
+
+.form-page-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #f0f6fc;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #2271b1;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.form-page-link:hover {
+    background: #dce9f5;
+    color: #135e96;
+}
+
+.form-page-link .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
 }
 
 /*

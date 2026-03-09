@@ -61,6 +61,15 @@ class GutenbergBlocksInspector
 
     public function renderPage(): void
     {
+        $activeTab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'blocks';
+
+        if ($activeTab === 'forms') {
+            $this->renderPageShell($activeTab, function () {
+                $this->renderFormsTab();
+            });
+            return;
+        }
+
         global $wpdb;
         $allBlocks = WP_Block_Type_Registry::get_instance()->get_all_registered();
         $postTypes = [];
@@ -194,15 +203,41 @@ class GutenbergBlocksInspector
         $stats['postTypesCount'] = count($allPostTypesForStats);
         $stats['totalPosts'] = count($allPostsIds);
 
-        $this->renderTable($blocks, $adminUrlsByUrl, $pageNameByUrl, $stats);
+        $this->renderPageShell($activeTab, function () use ($blocks, $adminUrlsByUrl, $pageNameByUrl, $stats) {
+            $this->renderBlocksContent($blocks, $adminUrlsByUrl, $pageNameByUrl, $stats);
+        });
     }
 
-    private function renderTable(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl, array $stats): void
+    private function renderPageShell(string $activeTab, callable $contentCallback): void
     {
+        $tabs = [
+            'blocks' => ['label' => 'Blocs', 'icon' => 'dashicons-screenoptions'],
+            'forms'  => ['label' => 'Formulaires', 'icon' => 'dashicons-feedback'],
+        ];
         ?>
         <div class="wrap blocks-inspector-wrap">
             <h1><?php echo esc_html($this->metaTitle); ?></h1>
 
+            <nav class="inspector-tabs">
+                <?php foreach ($tabs as $tabSlug => $tab): ?>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=' . $this->slug . '&tab=' . $tabSlug)); ?>"
+                       class="inspector-tab <?php echo $activeTab === $tabSlug ? 'inspector-tab--active' : ''; ?>">
+                        <span class="dashicons <?php echo esc_attr($tab['icon']); ?>"></span>
+                        <?php echo esc_html($tab['label']); ?>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
+
+            <div class="inspector-tab-content">
+                <?php $contentCallback(); ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    private function renderBlocksContent(array $blocks, array $adminUrlsByUrl, array $pageNameByUrl, array $stats): void
+    {
+        ?>
             <!-- Section Statistiques -->
             <div class="blocks-dashboard">
                 <!-- Colonne gauche : Stats générales -->
@@ -458,6 +493,207 @@ class GutenbergBlocksInspector
                         </tbody>
                     </table>
                 </div>
+            </div>
+        <?php
+    }
+
+    private function renderFormsTab(): void
+    {
+        if (!function_exists('is_plugin_active')) {
+            include_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        if (!is_plugin_active('gravityforms/gravityforms.php')) {
+            ?>
+            <div class="forms-alert">
+                <span class="dashicons dashicons-warning"></span>
+                <div class="forms-alert-content">
+                    <strong>Gravity Forms non actif</strong>
+                    <p>Le plugin Gravity Forms doit être installé et activé pour afficher les formulaires.</p>
+                </div>
+            </div>
+            <?php
+            return;
+        }
+
+        global $wpdb;
+        $forms = \GFAPI::get_forms();
+        $formsUsed = 0;
+        $formsUnused = 0;
+        $totalEntries = 0;
+        $formsData = [];
+
+        foreach ($forms as $form) {
+            $formId = $form['id'];
+            $formTitle = $form['title'];
+            $entries = \GFAPI::count_entries($formId);
+            $totalEntries += $entries;
+
+            // Recherche des pages contenant le formulaire
+            // Patterns : shortcode, bloc GF natif, champ ACF "form_id" dans les blocs custom
+            $query = $wpdb->prepare(
+                "SELECT ID, post_title, post_type FROM {$wpdb->posts}
+                WHERE post_status = 'publish'
+                AND post_type != 'revision'
+                AND (
+                    post_content LIKE %s
+                    OR post_content LIKE %s
+                    OR post_content LIKE %s
+                    OR post_content LIKE %s
+                    OR post_content LIKE %s
+                )",
+                '%[gravityform id="' . $formId . '"%',
+                "%[gravityform id='" . $formId . "'%",
+                '%<!-- wp:gravityforms/form {"formId":"' . $formId . '"%',
+                '%<!-- wp:gravityforms/form {"formId":' . $formId . '%',
+                '%"form_id":"' . $formId . '"%'
+            );
+
+            $pages = $wpdb->get_results($query);
+
+            if (count($pages) > 0) {
+                $formsUsed++;
+            } else {
+                $formsUnused++;
+            }
+
+            $formsData[] = [
+                'id'      => $formId,
+                'title'   => $formTitle,
+                'entries' => $entries,
+                'pages'   => $pages,
+            ];
+        }
+
+        $totalForms = count($forms);
+        ?>
+        <!-- Dashboard formulaires -->
+        <div class="blocks-stats-row" style="margin-bottom: 32px;">
+            <div class="blocks-stat-card stat-default">
+                <div class="stat-icon-wrap">
+                    <span class="dashicons dashicons-feedback"></span>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value"><?php echo number_format($totalForms, 0, ',', ' '); ?></span>
+                    <span class="stat-label">Formulaires</span>
+                </div>
+            </div>
+
+            <div class="blocks-stat-card stat-success">
+                <div class="stat-icon-wrap">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value"><?php echo number_format($formsUsed, 0, ',', ' '); ?></span>
+                    <span class="stat-label">Utilisés</span>
+                </div>
+                <?php if ($totalForms > 0): ?>
+                <div class="stat-percentage"><?php echo round(($formsUsed / $totalForms) * 100); ?>%</div>
+                <?php endif; ?>
+            </div>
+
+            <div class="blocks-stat-card stat-danger">
+                <div class="stat-icon-wrap">
+                    <span class="dashicons dashicons-dismiss"></span>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value"><?php echo number_format($formsUnused, 0, ',', ' '); ?></span>
+                    <span class="stat-label">Inutilisés</span>
+                </div>
+                <?php if ($totalForms > 0): ?>
+                <div class="stat-percentage"><?php echo round(($formsUnused / $totalForms) * 100); ?>%</div>
+                <?php endif; ?>
+            </div>
+
+            <div class="blocks-stat-card stat-purple">
+                <div class="stat-icon-wrap">
+                    <span class="dashicons dashicons-email-alt"></span>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-value"><?php echo number_format($totalEntries, 0, ',', ' '); ?></span>
+                    <span class="stat-label">Entrées</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtre recherche formulaires -->
+        <div class="blocks-filters-section">
+            <div class="blocks-filters-bar">
+                <div class="filter-group">
+                    <label for="form-search">Recherche</label>
+                    <div class="filter-input-wrap">
+                        <span class="dashicons dashicons-search"></span>
+                        <input type="text" id="form-search" placeholder="Nom ou ID du formulaire...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des formulaires -->
+        <div class="blocks-table-section">
+            <div class="blocks-table-header">
+                <h2 class="section-title">
+                    <span class="dashicons dashicons-feedback"></span>
+                    Liste des formulaires
+                </h2>
+                <span class="blocks-table-count" id="forms-count"><?php echo $totalForms; ?> formulaire<?php echo $totalForms > 1 ? 's' : ''; ?></span>
+            </div>
+            <div class="blocks-table-wrapper">
+                <table class="blocks-table" id="forms-table">
+                    <thead>
+                    <tr>
+                        <th class="col-form-id">ID</th>
+                        <th class="col-form-title">Titre</th>
+                        <th class="col-form-entries">Entrées</th>
+                        <th class="col-form-pages">Pages utilisées</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($formsData as $form): ?>
+                        <tr>
+                            <td class="col-form-id">
+                                <code class="block-slug"><?php echo esc_html($form['id']); ?></code>
+                            </td>
+                            <td class="col-form-title">
+                                <span class="block-title"><?php echo esc_html($form['title']); ?></span>
+                            </td>
+                            <td class="col-form-entries">
+                                <?php
+                                $entries = (int)$form['entries'];
+                                if ($entries === 0) {
+                                    $badgeClass = 'badge-unused';
+                                    $badgeText = '0';
+                                } elseif ($entries <= 10) {
+                                    $badgeClass = 'badge-few';
+                                    $badgeText = $entries;
+                                } elseif ($entries <= 50) {
+                                    $badgeClass = 'badge-medium';
+                                    $badgeText = $entries;
+                                } else {
+                                    $badgeClass = 'badge-many';
+                                    $badgeText = $entries;
+                                }
+                                ?>
+                                <span class="block-badge <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
+                            </td>
+                            <td class="col-form-pages">
+                                <?php if (empty($form['pages'])): ?>
+                                    <span class="block-badge badge-unused">Aucune page</span>
+                                <?php else: ?>
+                                    <div class="posttypes-list">
+                                        <?php foreach ($form['pages'] as $page): ?>
+                                            <a href="<?php echo esc_url(get_edit_post_link($page->ID)); ?>" target="_blank" class="form-page-link">
+                                                <?php echo esc_html($page->post_title ?: 'Sans titre'); ?>
+                                                <span class="dashicons dashicons-external"></span>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
         <?php
