@@ -156,8 +156,193 @@ Formulaires - Tableau
     text-align: center;
 }
 
+.col-form-last-entry {
+    width: 180px;
+}
+
+.col-form-notifications {
+    width: 130px;
+}
+
 .col-form-pages {
     min-width: 250px;
+}
+
+/* En-têtes triables */
+.blocks-table th[data-sort-key] {
+    padding: 0;
+}
+
+.th-sort {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 14px 16px;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+}
+
+.col-form-entries .th-sort {
+    justify-content: center;
+}
+
+.th-sort:hover {
+    color: #2271b1;
+}
+
+.th-sort:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: -2px;
+}
+
+.th-sort-arrow::after {
+    content: '↕';
+    opacity: 0.35;
+}
+
+th[aria-sort='ascending'] .th-sort-arrow::after {
+    content: '↑';
+    opacity: 1;
+}
+
+th[aria-sort='descending'] .th-sort-arrow::after {
+    content: '↓';
+    opacity: 1;
+}
+
+th[aria-sort='ascending'] .th-sort,
+th[aria-sort='descending'] .th-sort {
+    color: #2271b1;
+}
+
+/* ID, titre et entrées cliquables */
+.col-form-id a {
+    text-decoration: none;
+}
+
+.form-title-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.form-title-link .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.form-title-link:hover {
+    color: #2271b1;
+}
+
+.form-title-link:hover .dashicons,
+.form-title-link:focus-visible .dashicons {
+    opacity: 1;
+}
+
+.form-entries-link {
+    text-decoration: none;
+}
+
+/* Notifications */
+.notif-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: var(--badge-padding);
+    border-radius: var(--badge-radius);
+    font-size: var(--badge-font-size);
+    font-weight: var(--badge-font-weight);
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.notif-badge--ok {
+    background: #f0f0f1;
+    color: #50575e;
+}
+
+.notif-badge--none {
+    background: var(--badge-unused-bg);
+    color: var(--badge-unused-color);
+}
+
+.notif-badge--none:hover {
+    background: #ffc4c4;
+    color: var(--badge-unused-color);
+}
+
+.notif-badge .dashicons {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+}
+
+
+.entry-freshness-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.entry-freshness {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: var(--badge-padding);
+    border-radius: var(--badge-radius);
+    font-size: var(--badge-font-size);
+    font-weight: var(--badge-font-weight);
+    white-space: nowrap;
+}
+
+/* Pastille de fraîcheur : reprend la couleur de texte du badge */
+.entry-freshness::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.entry-freshness--recent {
+    background: var(--badge-many-bg);
+    color: var(--badge-many-color);
+}
+
+.entry-freshness--warm {
+    background: var(--badge-few-bg);
+    color: var(--badge-few-color);
+}
+
+.entry-freshness--stale {
+    background: var(--badge-medium-bg);
+    color: var(--badge-medium-color);
+}
+
+.entry-freshness--never {
+    background: #f0f0f1;
+    color: #787c82;
+}
+
+.entry-freshness-date {
+    padding-left: 12px;
+    font-size: 12px;
+    color: #787c82;
 }
 
 .form-page-link {
@@ -183,6 +368,28 @@ Formulaires - Tableau
     width: 14px;
     height: 14px;
     opacity: 0.5;
+}
+
+/* Page non publiée : le formulaire n'est pas réellement en ligne */
+.form-page-link--unpublished {
+    background: #f6f7f7;
+    color: #646970;
+}
+
+.form-page-link--unpublished:hover {
+    background: #eaecee;
+    color: #3c434a;
+}
+
+.form-page-status {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #dcdcde;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #50575e;
 }
 
 /*

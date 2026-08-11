@@ -529,11 +529,33 @@ class GutenbergBlocksInspector
             $entries = \GFAPI::count_entries($formId);
             $totalEntries += $entries;
 
+            // Date de la dernière entrée (stockée en UTC par Gravity Forms)
+            $lastEntryDate = null;
+            $lastEntries = \GFAPI::get_entries(
+                $formId,
+                [],
+                ['key' => 'date_created', 'direction' => 'DESC'],
+                ['offset' => 0, 'page_size' => 1]
+            );
+            if (!is_wp_error($lastEntries) && !empty($lastEntries[0]['date_created'])) {
+                $lastEntryDate = $lastEntries[0]['date_created'];
+            }
+
+            // Notifications actives (GF considère une notification active sauf si isActive === false)
+            $activeNotifications = 0;
+            foreach ((array)rgar($form, 'notifications') as $notification) {
+                if (rgar($notification, 'isActive') !== false) {
+                    $activeNotifications++;
+                }
+            }
+
             // Recherche des pages contenant le formulaire
             // Patterns : shortcode, bloc GF natif, champ ACF "form_id" dans les blocs custom
+            // Les statuts non publiés sont inclus : un formulaire posé sur un brouillon
+            // n'est pas orphelin pour autant
             $query = $wpdb->prepare(
-                "SELECT ID, post_title, post_type FROM {$wpdb->posts}
-                WHERE post_status = 'publish'
+                "SELECT ID, post_title, post_type, post_status FROM {$wpdb->posts}
+                WHERE post_status IN ('publish', 'future', 'private', 'draft', 'pending')
                 AND post_type != 'revision'
                 AND (
                     post_content LIKE %s
@@ -558,10 +580,12 @@ class GutenbergBlocksInspector
             }
 
             $formsData[] = [
-                'id'      => $formId,
-                'title'   => $formTitle,
-                'entries' => $entries,
-                'pages'   => $pages,
+                'id'            => $formId,
+                'title'         => $formTitle,
+                'entries'       => $entries,
+                'lastEntry'     => $lastEntryDate,
+                'notifications' => $activeNotifications,
+                'pages'         => $pages,
             ];
         }
 
@@ -642,20 +666,52 @@ class GutenbergBlocksInspector
                 <table class="blocks-table" id="forms-table">
                     <thead>
                     <tr>
-                        <th class="col-form-id">ID</th>
-                        <th class="col-form-title">Titre</th>
-                        <th class="col-form-entries">Entrées</th>
-                        <th class="col-form-pages">Pages utilisées</th>
+                        <?php
+                        $sortableColumns = [
+                            ['class' => 'col-form-id', 'label' => 'ID', 'key' => 'id', 'type' => 'number'],
+                            ['class' => 'col-form-title', 'label' => 'Titre', 'key' => 'title', 'type' => 'text'],
+                            ['class' => 'col-form-entries', 'label' => 'Entrées', 'key' => 'entries', 'type' => 'number'],
+                            ['class' => 'col-form-last-entry', 'label' => 'Dernière entrée', 'key' => 'last-entry', 'type' => 'number'],
+                            ['class' => 'col-form-notifications', 'label' => 'Notifications', 'key' => 'notifications', 'type' => 'number'],
+                            ['class' => 'col-form-pages', 'label' => 'Pages utilisées', 'key' => 'pages', 'type' => 'number'],
+                        ];
+                        foreach ($sortableColumns as $column):
+                        ?>
+                            <th class="<?php echo esc_attr($column['class']); ?>"
+                                data-sort-key="<?php echo esc_attr($column['key']); ?>"
+                                data-sort-type="<?php echo esc_attr($column['type']); ?>"
+                                aria-sort="none">
+                                <button type="button" class="th-sort">
+                                    <?php echo esc_html($column['label']); ?>
+                                    <span class="th-sort-arrow" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                        <?php endforeach; ?>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($formsData as $form): ?>
-                        <tr>
+                    <?php
+                    foreach ($formsData as $form):
+                        $editFormUrl = admin_url('admin.php?page=gf_edit_forms&id=' . $form['id']);
+                        $entriesUrl = admin_url('admin.php?page=gf_entries&id=' . $form['id']);
+                        $lastEntryTimestamp = empty($form['lastEntry']) ? 0 : (int)mysql2date('U', $form['lastEntry'], false);
+                        ?>
+                        <tr data-sort-id="<?php echo esc_attr($form['id']); ?>"
+                            data-sort-title="<?php echo esc_attr($form['title']); ?>"
+                            data-sort-entries="<?php echo esc_attr($form['entries']); ?>"
+                            data-sort-last-entry="<?php echo esc_attr($lastEntryTimestamp); ?>"
+                            data-sort-notifications="<?php echo esc_attr($form['notifications']); ?>"
+                            data-sort-pages="<?php echo esc_attr(count($form['pages'])); ?>">
                             <td class="col-form-id">
-                                <code class="block-slug"><?php echo esc_html($form['id']); ?></code>
+                                <a href="<?php echo esc_url($editFormUrl); ?>" target="_blank">
+                                    <code class="block-slug"><?php echo esc_html($form['id']); ?></code>
+                                </a>
                             </td>
                             <td class="col-form-title">
-                                <span class="block-title"><?php echo esc_html($form['title']); ?></span>
+                                <a href="<?php echo esc_url($editFormUrl); ?>" target="_blank" class="form-title-link">
+                                    <span class="block-title"><?php echo esc_html($form['title']); ?></span>
+                                    <span class="dashicons dashicons-external"></span>
+                                </a>
                             </td>
                             <td class="col-form-entries">
                                 <?php
@@ -674,16 +730,66 @@ class GutenbergBlocksInspector
                                     $badgeText = $entries;
                                 }
                                 ?>
-                                <span class="block-badge <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
+                                <a href="<?php echo esc_url($entriesUrl); ?>" target="_blank" class="form-entries-link">
+                                    <span class="block-badge <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
+                                </a>
+                            </td>
+                            <td class="col-form-last-entry">
+                                <?php if (empty($form['lastEntry'])): ?>
+                                    <span class="entry-freshness entry-freshness--never">Jamais</span>
+                                <?php else:
+                                    $gmtTimestamp = (int)mysql2date('U', $form['lastEntry'], false);
+                                    $localDate = get_date_from_gmt($form['lastEntry']);
+                                    $elapsed = max(0, time() - $gmtTimestamp);
+                                    if ($elapsed <= WEEK_IN_SECONDS) {
+                                        $freshnessClass = 'entry-freshness--recent';
+                                    } elseif ($elapsed <= MONTH_IN_SECONDS) {
+                                        $freshnessClass = 'entry-freshness--warm';
+                                    } else {
+                                        $freshnessClass = 'entry-freshness--stale';
+                                    }
+                                    ?>
+                                    <div class="entry-freshness-cell">
+                                        <span class="entry-freshness <?php echo $freshnessClass; ?>">
+                                            il y a <?php echo esc_html(human_time_diff($gmtTimestamp, time())); ?>
+                                        </span>
+                                        <span class="entry-freshness-date">
+                                            <?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $localDate)); ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                            <td class="col-form-notifications">
+                                <?php if ((int)$form['notifications'] === 0): ?>
+                                    <a href="<?php echo esc_url(admin_url('admin.php?page=gf_edit_forms&view=settings&subview=notification&id=' . $form['id'])); ?>"
+                                       target="_blank"
+                                       class="notif-badge notif-badge--none"
+                                       title="Ce formulaire n'envoie aucune notification : les entrées ne préviennent personne.">
+                                        <span class="dashicons dashicons-warning"></span>
+                                        Aucune
+                                    </a>
+                                <?php else: ?>
+                                    <span class="notif-badge notif-badge--ok">
+                                        <?php echo (int)$form['notifications']; ?> active<?php echo (int)$form['notifications'] > 1 ? 's' : ''; ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td class="col-form-pages">
                                 <?php if (empty($form['pages'])): ?>
                                     <span class="block-badge badge-unused">Aucune page</span>
                                 <?php else: ?>
                                     <div class="posttypes-list">
-                                        <?php foreach ($form['pages'] as $page): ?>
-                                            <a href="<?php echo esc_url(get_edit_post_link($page->ID)); ?>" target="_blank" class="form-page-link">
+                                        <?php foreach ($form['pages'] as $page):
+                                            $isPublished = $page->post_status === 'publish';
+                                            $statusObject = get_post_status_object($page->post_status);
+                                            ?>
+                                            <a href="<?php echo esc_url(get_edit_post_link($page->ID)); ?>"
+                                               target="_blank"
+                                               class="form-page-link <?php echo $isPublished ? '' : 'form-page-link--unpublished'; ?>">
                                                 <?php echo esc_html($page->post_title ?: 'Sans titre'); ?>
+                                                <?php if (!$isPublished && $statusObject): ?>
+                                                    <span class="form-page-status"><?php echo esc_html($statusObject->label); ?></span>
+                                                <?php endif; ?>
                                                 <span class="dashicons dashicons-external"></span>
                                             </a>
                                         <?php endforeach; ?>

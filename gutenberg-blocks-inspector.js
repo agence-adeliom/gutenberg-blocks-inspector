@@ -149,5 +149,50 @@ document.addEventListener('DOMContentLoaded', function () {
         if (formSearchInput) {
             formSearchInput.addEventListener('input', filterFormsTable);
         }
+
+        // Tri des colonnes du tableau des formulaires
+        const formsTable = document.querySelector(SELECTORS.formsTable);
+
+        if (formsTable) {
+            const tbody = formsTable.querySelector('tbody');
+            const headers = Array.from(formsTable.querySelectorAll('th[data-sort-key]'));
+            let currentKey = null;
+            let currentDirection = null;
+
+            headers.forEach(header => {
+                const button = header.querySelector('.th-sort');
+                if (!button) return;
+
+                button.addEventListener('click', function () {
+                    const key = header.getAttribute('data-sort-key');
+                    const type = header.getAttribute('data-sort-type') || 'text';
+
+                    // Premier clic : décroissant sur les chiffres, croissant sur le texte
+                    const defaultDirection = type === 'number' ? 'desc' : 'asc';
+                    const direction = currentKey === key
+                        ? (currentDirection === 'asc' ? 'desc' : 'asc')
+                        : defaultDirection;
+
+                    currentKey = key;
+                    currentDirection = direction;
+
+                    headers.forEach(other => other.setAttribute('aria-sort', 'none'));
+                    header.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
+
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    rows.sort((a, b) => {
+                        const aValue = a.getAttribute('data-sort-' + key) || '';
+                        const bValue = b.getAttribute('data-sort-' + key) || '';
+                        const comparison = type === 'number'
+                            ? (parseFloat(aValue) || 0) - (parseFloat(bValue) || 0)
+                            : aValue.localeCompare(bValue, 'fr', { sensitivity: 'base' });
+
+                        return direction === 'asc' ? comparison : -comparison;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
     }
 });
